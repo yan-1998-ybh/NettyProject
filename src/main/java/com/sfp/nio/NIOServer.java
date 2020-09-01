@@ -29,7 +29,7 @@ public class NIOServer {
         serverSocketChannel.configureBlocking(false);
         //把serverSocketChannel注册到 selector 关心事件 OP_ACCEPT
         serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);//操作集位用于插座接受操作。接受另一个连接
-        System.out.println("注册后的selectionKeys的数量="+selector.keys().size());
+        System.out.println("注册后的selectionKeys的数量=" + selector.keys().size());
 
         //循环等待客户端连接
         while (true) {
@@ -42,7 +42,7 @@ public class NIOServer {
             //1.如果返回的>0,表示已近获取到关注的事件
             //2.selector.selectedKeys() 返回关住事件集合
             Set<SelectionKey> selectionKeys = selector.selectedKeys();
-            System.out.println("selectionKeys的数量="+selectionKeys.size());
+            System.out.println("selectionKeys的数量=" + selectionKeys.size());
 
             //遍历Set<SelectionKey>，使用迭代器遍历
             Iterator<SelectionKey> keyIterator = selectionKeys.iterator();
@@ -58,7 +58,7 @@ public class NIOServer {
                     socketChannel.configureBlocking(false);
                     //将socketChannel注册到selector,关注事件为OP_READ  同时给SocketChannel关联一个Buffer
                     socketChannel.register(selector, SelectionKey.OP_READ, ByteBuffer.allocate(1024));//
-                    System.out.println("客户端连接后注册的selectionKeys的数量="+selector.keys().size());
+                    System.out.println("客户端连接后注册的selectionKeys的数量=" + selector.keys().size());
 
                 }
                 if (key.isReadable()) {//发生OP_READ

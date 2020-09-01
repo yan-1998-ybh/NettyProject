@@ -1,11 +1,9 @@
 package com.sfp.nio.groupchat;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.Iterator;
 
 public class GroupChatServer {
@@ -37,7 +35,7 @@ public class GroupChatServer {
         try {
             //循环处理
             while (true){
-                int count = selector.select(2000);
+                int count = selector.select();
                 if (count>0){
                     //遍历得到的selectionKey集合
                     Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
@@ -46,6 +44,8 @@ public class GroupChatServer {
                         //监听到accept
                         if (key.isAcceptable()){
                             SocketChannel sc = listenChannel.accept();
+                            //设置非阻塞
+                            sc.configureBlocking(false);
                             //将该sc注册到selector
                             sc.register(selector,SelectionKey.OP_READ);
                             //提示
@@ -90,18 +90,43 @@ public class GroupChatServer {
                 sendInfoTOOtherClients(msg,channel);
             }
         }catch (Exception e){
-            e.printStackTrace();
+            try {
+                System.out.println(channel.getRemoteAddress()+"离线了");
+                //取消注册
+                key.channel();
+                //关闭通道
+                channel.close();
+
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         }
 
     }
 
     //转发消息给其他客户
-    private void sendInfoTOOtherClients(String msg,SocketChannel self){
+    private void sendInfoTOOtherClients(String msg,SocketChannel self) throws IOException {
         System.out.println("服务器转发消息中...");
-        //
+        //遍历，所有注册到selector上的socketChannel，并排除self
+        for (SelectionKey key:selector.keys()){
+            //通过key取出对应的SocketChannel
+            Channel targetChannel = key.channel();
+            //排除自己
+            if (targetChannel instanceof SocketChannel && targetChannel !=self){
+                //转型
+                SocketChannel dest = (SocketChannel)targetChannel;
+                //将msg存入buffer
+                ByteBuffer buffer = ByteBuffer.wrap(msg.getBytes());
+                //将buffer写入通道
+                dest.write(buffer);
+            }
+        }
 
     }
     public static void main(String[] args) {
+        //创建服务器对象
+        GroupChatServer groupChatServer = new GroupChatServer();
+        groupChatServer.listen();
 
     }
 }
